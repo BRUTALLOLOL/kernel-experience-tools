@@ -1,58 +1,59 @@
 from setuptools import setup, find_packages
-import os
+import sys
 
-# Read the contents of README file
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-# Read requirements from requirements.txt
-def read_requirements():
-    req_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
-    if os.path.exists(req_path):
-        with open(req_path, "r", encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip() and not line.startswith("#")]
-    return []
+# Auto-detect Python version for appropriate dependency ranges
+python_version = sys.version_info
 
-# Get version from package __init__.py
-def get_version():
-    init_path = os.path.join(os.path.dirname(__file__), "src", "kernel_experience", "__init__.py")
-    if os.path.exists(init_path):
-        with open(init_path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("__version__"):
-                    return line.split("=")[1].strip().strip("'\"")
-    return "0.1.0"
+if python_version.major == 3:
+    if python_version.minor >= 12:
+        # Python 3.12+ supports NumPy 2.0+
+        numpy_req = "numpy>=2.0.0"
+        scipy_req = "scipy>=1.13.0"
+        matplotlib_req = "matplotlib>=3.8.0"
+    elif python_version.minor >= 8:
+        # Python 3.8-3.11: NumPy 1.x
+        numpy_req = "numpy>=1.21.0,<2.0.0"
+        scipy_req = "scipy>=1.6.0"
+        matplotlib_req = "matplotlib>=3.3.0"
+    else:
+        # Python 3.7 (minimum supported)
+        numpy_req = "numpy>=1.19.0,<2.0.0"
+        scipy_req = "scipy>=1.6.0"
+        matplotlib_req = "matplotlib>=3.3.0"
+else:
+    # Fallback for unexpected Python versions
+    numpy_req = "numpy>=1.19.0"
+    scipy_req = "scipy>=1.6.0"
+    matplotlib_req = "matplotlib>=3.3.0"
 
 setup(
-    # Basic package information
     name="kernel-experience-tools",
-    version=get_version(),
+    version="0.1.0",
     author="Artem Vozmishchev",
-    author_email="xbrutallololx@gmail.com",
+    author_email="your.email@example.com",
     description="Library for projecting memory kernels to experience functions",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/BRUTALLOLOL/kernel-experience-tools",
     
-    # Package structure - using explicit package name to ensure correct installation
-    packages=["kernel_experience"],
-    package_dir={"kernel_experience": "src/kernel_experience"},
+    # Package structure
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     
-    # Alternatively, if you want automatic package discovery:
-    # package_dir={"": "src"},
-    # packages=find_packages(where="src"),
-    
-    # Python version requirements
+    # Python version requirement
     python_requires=">=3.7",
     
-    # Dependencies
-    install_requires=read_requirements() or [
-        "numpy>=1.19.0",
-        "scipy>=1.6.0",
-        "matplotlib>=3.3.0",
+    # Dynamic dependencies based on Python version
+    install_requires=[
+        numpy_req,
+        scipy_req,
+        matplotlib_req,
     ],
     
-    # PyPI classifiers for better discoverability
+    # PyPI classifiers
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
@@ -62,6 +63,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Intended Audience :: Science/Research",
@@ -71,44 +73,32 @@ setup(
     ],
     
     # Keywords for PyPI search
-    keywords=["memory-kernels", "experience-functions", "scientific-computing", "mathematics", "physics"],
+    keywords=[
+        "memory-kernels",
+        "experience-functions",
+        "scientific-computing",
+        "mathematics",
+        "physics",
+        "data-analysis",
+    ],
     
     # Build options
     include_package_data=True,
     zip_safe=False,
     
-    # Optional: Additional files to include
+    # Optional: package data files
     package_data={
         "kernel_experience": ["*.txt", "*.md", "*.yaml", "*.json"],
     },
     
-    # Optional: Entry points for command-line tools
+    # Optional: command-line interface
     # entry_points={
     #     "console_scripts": [
     #         "kernel-experience=kernel_experience.cli:main",
     #     ],
     # },
     
-    # Optional: Test suite
-    # test_suite="tests",
-    # tests_require=["pytest>=6.0"],
-    
-    # Optional: Development dependencies
-    extras_require={
-        "dev": [
-            "pytest>=6.0",
-            "pytest-cov",
-            "black",
-            "flake8",
-            "mypy",
-        ],
-        "docs": [
-            "sphinx",
-            "sphinx-rtd-theme",
-        ],
-    },
-    
-    # License information
+    # License
     license="MIT",
     
     # Project URLs
