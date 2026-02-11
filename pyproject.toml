@@ -6,91 +6,18 @@ build-backend = "setuptools.build_meta"
 name = "kernel-experience-tools"
 version = "0.1.0"
 authors = [
-    {name = "Artem Vozmishchev", email = "xbrutallololx@gmail.com"}
+    {name = "Artem Vozmishchev", email = "your.email@example.com"}
 ]
 description = "Library for projecting memory kernels to experience functions"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
-keywords = ["memory-kernels", "experience-functions", "scientific-computing"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
 
-# Base dependencies (scipy and matplotlib have wide compatibility)
 dependencies = [
+    "numpy",
     "scipy>=1.6.0",
     "matplotlib>=3.3.0",
 ]
 
-# Optional dependencies for different Python versions
-# Users can install with: pip install "kernel-experience-tools[py39]"
-[project.optional-dependencies]
-py37 = ["numpy>=1.19.0,<2.0.0"]
-py38 = ["numpy>=1.21.0,<2.0.0"]
-py39 = ["numpy>=1.21.0,<2.0.0"]
-py310 = ["numpy>=1.21.0,<2.0.0"]
-py311 = ["numpy>=1.23.0,<2.0.0"]
-py312 = ["numpy>=2.0.0"]
-py313 = ["numpy>=2.0.0"]
-
-# All-in-one installation (pip will choose appropriate numpy version)
-all = ["numpy"]
-
-# Development dependencies
-dev = [
-    "pytest>=6.0",
-    "pytest-cov>=3.0",
-    "black>=23.0",
-    "flake8>=6.0",
-    "mypy>=1.0",
-    "pre-commit>=3.0",
-]
-
-# Documentation dependencies
-docs = [
-    "sphinx>=7.0",
-    "sphinx-rtd-theme>=1.0",
-    "sphinx-autodoc-typehints>=1.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/BRUTALLOLOL/kernel-experience-tools"
-Repository = "https://github.com/BRUTALLOLOL/kernel-experience-tools"
-Issues = "https://github.com/BRUTALLOLOL/kernel-experience-tools/issues"
-Documentation = "https://github.com/BRUTALLOLOL/kernel-experience-tools#readme"
-
-# Optional: tool configuration
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-# Optional: tool configuration for development
-[tool.black]
-line-length = 88
-target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313']
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-
-[tool.mypy]
-python_version = "3.7"
-warn_return_any = true
-warn_unused_configs = true
