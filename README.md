@@ -1,9 +1,9 @@
 # Kernel-Experience Tools
 
-A Python library for projecting memory kernels in Volterra equations to experience functions in iterative relaxation transforms.
+A Python library for projecting memory kernels to experience functions.
 
 ## Installation
 
-### From GitHub (recommended for testing)
+### From GitHub:
 ```bash
 pip install git+https://github.com/BRUTALLOLOL/kernel-experience-tools.git
