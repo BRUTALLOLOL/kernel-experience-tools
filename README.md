@@ -4,5 +4,6 @@ A Python library for projecting memory kernels in Volterra equations to experien
 
 ## Installation
 
+### From GitHub (recommended for testing)
 ```bash
-pip install kernel-experience-tools
+pip install git+https://github.com/BRUTALLOLOL/kernel-experience-tools.git
