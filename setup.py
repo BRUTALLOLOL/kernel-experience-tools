@@ -1,9 +1,21 @@
 from setuptools import setup, find_packages, Extension
 import pybind11
 import numpy as np
+import sys
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+
+# Fix for Windows debug/release library conflict
+compile_args = ['-O3', '-std=c++11']
+link_args = []
+
+if sys.platform == 'win32':
+    # Force release mode on Windows to avoid pythonXYt.lib
+    compile_args.append('/MD')
+    # Explicitly tell linker to use release python library
+    link_args.append('/NODEFAULTLIB:python{}t.lib'.format(sys.version_info.major))
+    link_args.append('/DEFAULTLIB:python{}.lib'.format(sys.version_info.major))
 
 # C++ module for fast Volterra solver
 cpp_module = Extension(
@@ -11,7 +23,8 @@ cpp_module = Extension(
     sources=['src/kernel_experience/solvers.cpp'],
     include_dirs=[pybind11.get_include(), np.get_include()],
     language='c++',
-    extra_compile_args=['-O3', '-std=c++11'],
+    extra_compile_args=compile_args,
+    extra_link_args=link_args,
 )
 
 setup(
