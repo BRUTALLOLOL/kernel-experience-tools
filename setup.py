@@ -33,7 +33,7 @@ cpp_module = Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.0.0",
+    version="1.0.1",
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
@@ -67,3 +67,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
