@@ -65,10 +65,10 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Publish to PyPI
+      - name: Upgrade packaging and publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          pip install twine
+          pip install --upgrade packaging twine
           twine upload dist/*
