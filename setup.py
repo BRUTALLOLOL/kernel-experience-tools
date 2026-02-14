@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="kernel-experience-tools",
-    version="0.1.1",
+    version="0.2.0",
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
@@ -48,4 +48,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
 
