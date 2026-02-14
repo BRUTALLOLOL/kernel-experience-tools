@@ -200,6 +200,52 @@ print(f"Mean error: {metrics['mean_error']:.2e}")
 
 ---
 
+### 🔄 Lambda conversion (0.2.0)
+
+Experience values depend on your choice of λ. These tools let you convert between different scales — no need to pick a "right" one.
+
+**Methods** (available directly from the `Kernel` class)
+
+```python
+from kernel_experience import Kernel
+
+# Convert experience from one λ to another
+n2 = Kernel.convert_lambda(n=3.05, lambda_from=0.8, lambda_to=0.5)
+
+# Get the conversion factor directly
+factor = Kernel.scale_factor(0.8, 0.5)   # n₀.₅ = n₀.₈ * factor
+```
+
+| Method | What it does |
+|--------|--------------|
+| `convert_lambda(n, λ₁, λ₂)` | Returns `n` measured in scale `λ₁` expressed in scale `λ₂` |
+| `scale_factor(λ₁, λ₂)` | Multiplication factor: `n₂ = n₁ · factor` |
+
+**Formula**
+
+```
+n₂ = n₁ · log_{λ₂}(λ₁)
+```
+
+Exact. No approximation. No privileged scale.
+
+**Example**
+
+You ran a kernel with `λ = 0.8` and got `n = 3.05`.  
+What would that be if you had used `λ = 0.5`?
+
+```python
+n_at_0_5 = Kernel.convert_lambda(3.05, 0.8, 0.5)
+print(n_at_0_5)   # ≈ 2.07
+```
+
+Or get the factor once and reuse it:
+
+```python
+factor = Kernel.scale_factor(0.8, 0.5)
+n_at_0_5 = 3.05 * factor   # same result
+```
+
 ## 🧠 What problem does it solve?
 
 Traditional relaxation models assume exponential decay.
@@ -239,4 +285,5 @@ MIT License
 ---
 
 **Now go find what your kernel remembers.**
+
 
