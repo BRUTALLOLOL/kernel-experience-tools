@@ -30,13 +30,7 @@ cpp_module = Extension(
     extra_compile_args=compile_args,
     extra_link_args=link_args,
 )
-import os
-from setuptools import setup, find_packages, Extension
 
-try:
-    del os.environ['SETUPTOOLS_USE_DISTUTILS']
-except KeyError:
-    pass
 setup(
     name="kernel-experience-tools",
     version="1.0.0",
@@ -70,9 +64,6 @@ setup(
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Physics",
     ],
-    license="MIT",
-    license_files=[],
     include_package_data=True,
     zip_safe=False,
 )
-
