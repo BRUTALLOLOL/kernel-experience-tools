@@ -1,3 +1,7 @@
+import os
+
+os.environ["SETUPTOOLS_USE_DISTUTILS"] = "stdlib"
+
 from setuptools import setup, find_packages, Extension
 import pybind11
 import numpy as np
@@ -67,3 +71,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
