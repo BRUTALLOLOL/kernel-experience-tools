@@ -65,7 +65,9 @@ setup(
         "Topic :: Scientific/Engineering :: Physics",
     ],
     license="MIT", 
+    license_files=()
     include_package_data=True,
     zip_safe=False,
 )
+
 
