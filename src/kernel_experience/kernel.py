@@ -36,7 +36,56 @@ class Kernel:
     def __repr__(self):
         return f"Kernel(name='{self.name}', params={self.params})"
 
-    # Factory methods for common kernels
+    # ----- Lambda conversion utilities -----
+    @staticmethod
+    def convert_lambda(n: float, lambda_from: float, lambda_to: float) -> float:
+        """
+        Convert experience value from one lambda scale to another.
+
+        Parameters
+        ----------
+        n : float
+            Experience value in original lambda scale.
+        lambda_from : float
+            Original lambda (must be in (0,1)).
+        lambda_to : float
+            Target lambda (must be in (0,1)).
+
+        Returns
+        -------
+        float
+            Experience value in target lambda scale.
+        """
+        if lambda_from <= 0 or lambda_from >= 1:
+            raise ValueError("lambda_from must be in (0,1)")
+        if lambda_to <= 0 or lambda_to >= 1:
+            raise ValueError("lambda_to must be in (0,1)")
+
+        # n₂ = n₁ · log_{λ₂}(λ₁)
+        return n * np.log(lambda_from) / np.log(lambda_to)
+
+    @staticmethod
+    def scale_factor(lambda_from: float, lambda_to: float) -> float:
+        """
+        Get conversion factor between two lambda scales.
+
+        n_to = n_from * scale_factor(lambda_from, lambda_to)
+
+        Parameters
+        ----------
+        lambda_from : float
+            Original lambda.
+        lambda_to : float
+            Target lambda.
+
+        Returns
+        -------
+        float
+            Multiplication factor.
+        """
+        return np.log(lambda_from) / np.log(lambda_to)
+
+    # ----- Factory methods for common kernels -----
     @classmethod
     def exponential(cls, gamma: float = 1.0):
         """Exponential kernel: K(t) = γ * e^{-γt}"""
