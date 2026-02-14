@@ -11,11 +11,15 @@ compile_args = ['-O3', '-std=c++11']
 link_args = []
 
 if sys.platform == 'win32':
-    # Force release mode on Windows to avoid pythonXYt.lib
+    # Force release mode on Windows
     compile_args.append('/MD')
-    # Explicitly tell linker to use release python library
-    link_args.append('/NODEFAULTLIB:python{}t.lib'.format(sys.version_info.major))
-    link_args.append('/DEFAULTLIB:python{}.lib'.format(sys.version_info.major))
+    
+    # Get Python version as string (e.g., "313" for 3.13)
+    py_version = f"{sys.version_info.major}{sys.version_info.minor}"
+    
+    # Explicitly ignore debug library and force release
+    link_args.append(f'/NODEFAULTLIB:python{py_version}t.lib')
+    link_args.append(f'/DEFAULTLIB:python{py_version}.lib')
 
 # C++ module for fast Volterra solver
 cpp_module = Extension(
@@ -29,7 +33,7 @@ cpp_module = Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.0.0",  # 🚀 First stable release with C++ backend
+    version="1.0.0",
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
