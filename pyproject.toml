@@ -16,7 +16,7 @@ authors = [
 description = "Library for projecting memory kernels to experience functions"
 readme = "README.md"
 requires-python = ">=3.7"
-license = {text = "MIT"}
+license = "MIT"
 
 dependencies = [
     "numpy",
