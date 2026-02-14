@@ -42,7 +42,7 @@ print(f"Memory score: {n[-1]:.2f}")
 ## 📦 Installation
 
 ```bash
-pip install git+https://github.com/BRUTALLOLOL/kernel-experience-tools
+pip install kernel-experience-tools
 ```
 
 ---
@@ -239,3 +239,4 @@ MIT License
 ---
 
 **Now go find what your kernel remembers.**
+
