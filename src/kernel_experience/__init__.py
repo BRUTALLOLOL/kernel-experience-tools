@@ -14,7 +14,7 @@ except ImportError:
     from .projection import project_kernel_to_n, project_to_envelope_n, compute_accuracy
     from .solvers import solve_volterra
 
-__version__ = "0.2.0" 
+__version__ = "1.0.1"
 __author__ = "Artem Vozmishchev"
 __email__ = "xbrutallololx@gmail.com"
 
@@ -25,3 +25,4 @@ __all__ = [
     "compute_accuracy",
     "solve_volterra"
 ]
+
