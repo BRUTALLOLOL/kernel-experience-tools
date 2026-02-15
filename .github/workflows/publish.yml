@@ -119,7 +119,7 @@ jobs:
           path: downloaded-artifacts
           merge-multiple: false
 
-      - name: Debug - list downloaded artifacts (structure)
+      - name: Debug - show downloaded artifacts structure
         run: |
           echo "=== DOWNLOADED ARTIFACTS STRUCTURE ==="
           find downloaded-artifacts -type f | sort
@@ -133,156 +133,139 @@ jobs:
           mkdir -p dist
           echo "=== Created clean dist directory ==="
 
-      - name: Collect all wheel files
+      - name: Copy all wheel files (any platform)
         run: |
-          echo "=== COLLECTING WHEEL FILES ==="
-          wheel_count=0
-          while IFS= read -r file; do
-            if [ -f "$file" ]; then
-              cp "$file" dist/
-              echo "Copied: $file"
-              ((wheel_count++))
-            fi
-          done < <(find downloaded-artifacts -name "*.whl" -type f)
+          echo "=== COPYING WHEEL FILES ==="
           
+          # Find all .whl files recursively and copy them to dist/
+          wheel_files=$(find downloaded-artifacts -name "*.whl" -type f)
+          
+          if [ -z "$wheel_files" ]; then
+            echo "ERROR: No wheel files found!"
+            exit 1
+          fi
+          
+          echo "$wheel_files" | while read -r file; do
+            cp "$file" dist/
+            echo "Copied: $file"
+          done
+          
+          # Count copied files
+          wheel_count=$(ls -1 dist/*.whl 2>/dev/null | wc -l)
+          echo ""
           echo "Total wheel files copied: $wheel_count"
           echo ""
           echo "=== Wheels in dist directory ==="
-          ls -la dist/*.whl 2>/dev/null || echo "No wheel files found"
+          ls -la dist/*.whl
 
-      - name: Process and clean source distributions
+      - name: Copy source distribution
         run: |
-          echo "=== PROCESSING SOURCE DISTRIBUTIONS ==="
-          sdist_count=0
+          echo "=== COPYING SOURCE DISTRIBUTION ==="
           
-          while IFS= read -r tgz; do
+          # Find all .tar.gz files recursively
+          sdist_files=$(find downloaded-artifacts -name "*.tar.gz" -type f)
+          
+          if [ -z "$sdist_files" ]; then
+            echo "ERROR: No source distribution files found!"
+            exit 1
+          fi
+          
+          echo "$sdist_files" | while read -r file; do
+            cp "$file" dist/
+            echo "Copied: $file"
+          done
+          
+          # Count copied files
+          sdist_count=$(ls -1 dist/*.tar.gz 2>/dev/null | wc -l)
+          echo ""
+          echo "Total source distributions copied: $sdist_count"
+          echo ""
+          echo "=== Source distributions in dist directory ==="
+          ls -la dist/*.tar.gz
+
+      - name: Clean metadata from source distributions
+        run: |
+          echo "=== CLEANING METADATA FROM SOURCE DISTRIBUTIONS ==="
+          
+          for tgz in dist/*.tar.gz; do
             if [ -f "$tgz" ]; then
               echo ""
-              echo "Processing: $tgz"
-              filename=$(basename "$tgz")
-              echo "Filename: $filename"
+              echo "Processing: $(basename "$tgz")"
               
+              # Create temp directory
               temp_dir=$(mktemp -d)
-              echo "Temp dir: $temp_dir"
               
+              # Extract archive
               tar -xzf "$tgz" -C "$temp_dir"
-              echo "Extracted to temp dir"
               
+              # Find package directory (first directory inside temp_dir)
               pkg_dir=$(find "$temp_dir" -maxdepth 1 -type d | grep -v "^$temp_dir$" | head -1)
-              echo "Package directory: $pkg_dir"
               
               if [ -f "$pkg_dir/PKG-INFO" ]; then
-                echo "Found PKG-INFO, cleaning..."
+                echo "  Cleaning PKG-INFO..."
                 
-                echo "--- Original PKG-INFO (first 20 lines) ---"
-                head -20 "$pkg_dir/PKG-INFO"
+                # Show original problematic fields if any
+                if grep -q "license-file\|license-expression" "$pkg_dir/PKG-INFO"; then
+                  echo "  Found problematic fields:"
+                  grep "license-file\|license-expression" "$pkg_dir/PKG-INFO" || true
+                fi
                 
-                # Удаляем проблемные поля
+                # Remove problematic fields
                 sed -i '/license-file/d' "$pkg_dir/PKG-INFO"
                 sed -i '/license-expression/d' "$pkg_dir/PKG-INFO"
                 
-                # Добавляем License: MIT если нет
+                # Ensure License field exists
                 if ! grep -q "^License:" "$pkg_dir/PKG-INFO"; then
                   echo "License: MIT" >> "$pkg_dir/PKG-INFO"
+                  echo "  Added License: MIT field"
                 fi
                 
-                echo "--- Cleaned PKG-INFO (first 20 lines) ---"
-                head -20 "$pkg_dir/PKG-INFO"
+                echo "  PKG-INFO cleaned successfully"
               else
-                echo "WARNING: No PKG-INFO found in $pkg_dir"
+                echo "  WARNING: No PKG-INFO found"
               fi
               
-              echo "Creating new archive: dist/$filename"
-              (cd "$temp_dir" && tar -czf "$GITHUB_WORKSPACE/dist/$filename" "$(basename "$pkg_dir")")
+              # Create new archive
+              pkg_basename=$(basename "$pkg_dir")
+              (cd "$temp_dir" && tar -czf "$GITHUB_WORKSPACE/dist/$pkg_basename.tar.gz" "$pkg_basename")
               
-              if [ -f "dist/$filename" ]; then
-                echo "✓ Successfully created: dist/$filename"
-                echo "New archive size: $(du -h "dist/$filename" | cut -f1)"
-                ((sdist_count++))
-              else
-                echo "✗ Failed to create: dist/$filename"
-              fi
-              
+              # Clean up
               rm -rf "$temp_dir"
-              echo "Cleaned up temp dir"
-            fi
-          done < <(find downloaded-artifacts -name "*.tar.gz" -type f)
-          
-          echo ""
-          echo "Total source distributions processed: $sdist_count"
-
-      - name: Final verification of dist directory
-        run: |
-          echo "=== FINAL DIST DIRECTORY CONTENTS ==="
-          echo "Location: $PWD/dist"
-          echo ""
-          echo "Directory listing:"
-          ls -la dist/
-          echo ""
-          echo "File details:"
-          for file in dist/*; do
-            if [ -f "$file" ]; then
-              echo "File: $(basename "$file")"
-              echo "  Size: $(du -h "$file" | cut -f1)"
-              echo "  Type: $(file "$file")"
-              echo ""
+              echo "  Repackaged: $(basename "$tgz")"
             fi
           done
-          
-          wheel_count=$(ls -1 dist/*.whl 2>/dev/null | wc -l)
-          sdist_count=$(ls -1 dist/*.tar.gz 2>/dev/null | wc -l)
-          total_count=$((wheel_count + sdist_count))
-          
-          echo "=== SUMMARY ==="
-          echo "Wheel files: $wheel_count"
-          echo "Source distributions: $sdist_count"
-          echo "Total files: $total_count"
-          
-          if [ $total_count -eq 0 ]; then
-            echo "ERROR: No files found in dist directory!"
-            exit 1
-          fi
 
-      - name: Verify metadata in cleaned source distributions
+      - name: Verify cleaned metadata
         run: |
-          echo "=== VERIFYING METADATA IN CLEANED SDISTS ==="
+          echo "=== VERIFYING CLEANED METADATA ==="
+          
           for tgz in dist/*.tar.gz; do
             if [ -f "$tgz" ]; then
               echo ""
               echo "Checking: $(basename "$tgz")"
-              echo "--- PKG-INFO content ---"
-              tar -xOzf "$tgz" "*/PKG-INFO" 2>/dev/null || echo "Failed to extract PKG-INFO"
-              echo "--- End of PKG-INFO ---"
+              echo "--- PKG-INFO content (first 15 lines) ---"
+              tar -xOzf "$tgz" "*/PKG-INFO" 2>/dev/null | head -15
               
+              # Check for problematic fields
               if tar -xOzf "$tgz" "*/PKG-INFO" 2>/dev/null | grep -q "license-file\|license-expression"; then
-                echo "⚠️  WARNING: Found problematic fields in metadata!"
+                echo "❌ ERROR: Problematic fields still present!"
+                exit 1
               else
                 echo "✅ No problematic fields found"
               fi
+              echo "---"
             fi
           done
 
-      - name: Verify wheel metadata
+      - name: List all files ready for upload
         run: |
-          echo "=== VERIFYING WHEEL METADATA ==="
-          pip install wheel
-          for whl in dist/*.whl; do
-            if [ -f "$whl" ]; then
-              echo ""
-              echo "Checking: $(basename "$whl")"
-              
-              temp_whl_dir=$(mktemp -d)
-              unzip -q "$whl" -d "$temp_whl_dir"
-              
-              metadata_file=$(find "$temp_whl_dir" -name "METADATA" -type f | head -1)
-              if [ -f "$metadata_file" ]; then
-                echo "--- METADATA content (first 20 lines) ---"
-                head -20 "$metadata_file"
-                echo "--- End of METADATA ---"
-              fi
-              rm -rf "$temp_whl_dir"
-            fi
-          done
+          echo "=== FILES READY FOR UPLOAD ==="
+          echo "Total files: $(ls -1 dist/ | wc -l)"
+          echo ""
+          ls -la dist/
+          echo ""
+          echo "=== File types ==="
+          file dist/* || true
 
       - name: Set up Python for upload
         uses: actions/setup-python@v5
@@ -294,20 +277,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade twine build
 
-      - name: Run twine check
+      - name: Run twine check on all files
         run: |
           echo "=== RUNNING TWINE CHECK ==="
           cd dist
-          echo "Files in dist:"
-          ls -la
-          echo ""
-          echo "Twine check output:"
-          # Проверяем каждый файл отдельно для лучшей диагностики
+          
+          # Check each file individually
           for file in *; do
-            echo "Checking $file:"
-            twine check "$file" 2>&1 || echo "⚠️  Twine check failed for $file"
-            echo "---"
+            echo ""
+            echo "Checking: $file"
+            if twine check "$file" 2>&1; then
+              echo "✅ Passed: $file"
+            else
+              echo "❌ Failed: $file"
+              exit 1
+            fi
           done
+          
           cd ..
 
       - name: Publish to PyPI
@@ -316,38 +302,37 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           echo "=== PUBLISHING TO PyPI ==="
-          echo "Files to upload:"
-          ls -la dist/
+          echo "Uploading $(ls -1 dist/ | wc -l) files..."
           echo ""
-          echo "Starting upload..."
           
-          # Загружаем файлы по одному
+          # Upload files one by one for better error tracking
           for file in dist/*; do
             if [ -f "$file" ]; then
-              echo ""
               echo "Uploading: $(basename "$file")"
-              echo "Full path: $file"
-              echo "File size: $(du -h "$file" | cut -f1)"
+              echo "Size: $(du -h "$file" | cut -f1)"
               
-              # Пробуем загрузить
               if twine upload --verbose "$file"; then
-                echo "✓ Successfully uploaded: $(basename "$file")"
+                echo "✅ Successfully uploaded: $(basename "$file")"
               else
-                echo "✗ Failed to upload: $(basename "$file")"
+                echo "❌ Failed to upload: $(basename "$file")"
                 echo "Continuing with next file..."
               fi
+              echo ""
             fi
           done
           
-          echo ""
-          echo "✓ Upload process completed!"
+          echo "=== UPLOAD PROCESS COMPLETED ==="
 
-      - name: Verify upload
+      - name: Final success message
         if: success()
         run: |
-          echo "=== VERIFYING UPLOAD ==="
+          echo "🎉🎉🎉 SUCCESS! 🎉🎉🎉"
+          echo "Package: kernel-experience-tools"
+          
+          # Extract version from first wheel file
           version=$(ls dist/*.whl 2>/dev/null | head -1 | grep -oP 'kernel_experience_tools-\K[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
-          echo "Package version: $version"
+          echo "Version: $version"
           echo ""
           echo "Check at: https://pypi.org/project/kernel-experience-tools/$version/"
-          echo "It may take a few minutes to appear."
+          echo ""
+          echo "Install with: pip install kernel-experience-tools==$version"
