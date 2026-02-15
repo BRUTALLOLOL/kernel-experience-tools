@@ -18,8 +18,8 @@ if sys.platform == 'win32':
     # Check if running in CI environment (GitHub Actions)
     if os.getenv('GITHUB_ACTIONS') == 'true':
         # Conservative flags for CI to prevent timeouts and crashes
-        compile_args.insert(0, '/O1')  # Minimal optimizations for stability
-        print("Windows CI detected: using conservative compile flags (/O1)")
+        compile_args.insert(0, '/O2')  # Best optimizations
+        print("Windows CI detected: using conservative compile flags (/O2)")
     else:
         # Full optimizations for local builds
         compile_args.insert(0, '/O2')  # Maximum optimizations
@@ -116,4 +116,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
 
