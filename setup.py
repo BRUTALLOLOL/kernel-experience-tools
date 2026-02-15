@@ -73,7 +73,7 @@ projection_module = Pybind11Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.1.4",  
+    version="1.2.0",  
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
@@ -109,3 +109,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
