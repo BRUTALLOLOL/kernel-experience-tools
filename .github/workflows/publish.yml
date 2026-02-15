@@ -65,10 +65,13 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Upgrade packaging and publish
+      - name: Check and Publish to PyPI with verbose
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          pip install --upgrade packaging twine
-          twine upload dist/*
+          pip install --upgrade twine
+          echo "🔍 Running twine check..."
+          twine check dist/* --strict
+          echo "📦 Running twine upload with verbose..."
+          twine upload --verbose --skip-existing dist/*
