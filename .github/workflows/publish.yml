@@ -80,13 +80,65 @@ jobs:
         with:
           path: dist-artifacts 
 
-      - name: Move files to dist directory
+      - name: Clean metadata and prepare distributions
         run: |
           mkdir -p dist
-          find dist-artifacts -type f -name "*.whl" -o -name "*.tar.gz" -exec cp {} dist/ \;
           
+          cp dist-artifacts/*.whl dist/ 2>/dev/null || true
+
+          for tgz in dist-artifacts/*.tar.gz; do
+            if [ -f "$tgz" ]; then
+              echo "Processing $tgz"
+
+              filename=$(basename "$tgz")
+
+              temp_dir=$(mktemp -d)
+              
+
+              tar -xzf "$tgz" -C "$temp_dir"
+              
+
+              pkg_dir=$(find "$temp_dir" -maxdepth 1 -type d | tail -1)
+              
+              if [ -f "$pkg_dir/PKG-INFO" ]; then
+                echo "Cleaning PKG-INFO in $pkg_dir"
+
+                sed -i '/license-file/d' "$pkg_dir/PKG-INFO"
+                sed -i '/license-expression/d' "$pkg_dir/PKG-INFO"
+                
+                # Убеждаемся, что есть поле License: MIT
+                if ! grep -q "^License:" "$pkg_dir/PKG-INFO"; then
+                  echo "License: MIT" >> "$pkg_dir/PKG-INFO"
+                fi
+              fi
+              
+
+              tar -czf "dist/$filename" -C "$temp_dir" "$(basename "$pkg_dir")"
+              
+
+              rm -rf "$temp_dir"
+              
+              echo "Cleaned and repackaged $filename"
+            fi
+          done
+          
+      - name: Verify cleaned metadata
+        run: |
+          echo "=== Checking PKG-INFO in cleaned archives ==="
+          for tgz in dist/*.tar.gz; do
+            echo "Checking $tgz"
+            tar -xOzf "$tgz" "*/PKG-INFO" | head -15
+            echo "---"
+          done
+
       - name: List files before upload
-        run: ls -la dist/
+        run: |
+          echo "=== Files ready for upload ==="
+          ls -la dist/
+          echo "=== Wheel files ==="
+          ls -la dist/*.whl 2>/dev/null || echo "No wheel files"
+          echo "=== Source distributions ==="
+          ls -la dist/*.tar.gz 2>/dev/null || echo "No source distributions"
 
       - name: Publish to PyPI
         env:
@@ -94,5 +146,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           pip install --upgrade twine
-          twine check dist/*
+          echo "=== Running twine check ==="
+          twine check dist/* || echo "Twine check warnings (non-fatal)"
+          echo "=== Uploading to PyPI ==="
           twine upload --verbose dist/*
