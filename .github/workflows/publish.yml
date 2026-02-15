@@ -45,14 +45,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
       - name: Install dependencies
         run: pip install build
+
       - name: Build sdist
         run: python -m build --sdist
+
       - name: Store sdist
         uses: actions/upload-artifact@v4
         with:
@@ -70,10 +74,14 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: List downloaded files
+        run: ls -la dist/
+
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           pip install --upgrade twine
+          twine check dist/* || echo "Twine check warnings (non-fatal)"
           twine upload --verbose dist/*
