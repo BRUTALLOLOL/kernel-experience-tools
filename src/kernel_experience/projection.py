@@ -6,7 +6,7 @@ With automatic C++ acceleration for heavy parts.
 import numpy as np
 from typing import Tuple, Union
 from .kernel import Kernel
-from .solver import solve_volterra  # обрати внимание: solver (без s)
+from .solvers import solve_volterra 
 
 # Try to import C++ acceleration module
 try:
@@ -125,3 +125,4 @@ def compute_accuracy(original_x: np.ndarray,
         'accuracy': float(1 - np.mean(rel_error)),
         'rmse': float(np.sqrt(np.mean((original_x - reconstructed_x) ** 2)))
     }
+
