@@ -3,20 +3,28 @@ import pybind11
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 import numpy as np
 import sys
+import platform
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
-
-
-compile_args = ['-O3', '-std=c++11', '-DPy_LIMITED_API=0x030d0000']
+compile_args = []
 link_args = []
 
 if sys.platform == 'win32':
-    compile_args.append('/MD')
+    compile_args = ['/O2', '/MD']
     py_version = f"{sys.version_info.major}{sys.version_info.minor}"
-    link_args.append(f'/NODEFAULTLIB:python{py_version}t.lib')
-    link_args.append(f'/DEFAULTLIB:python{py_version}.lib')
+    link_args = [
+        f'/NODEFAULTLIB:python{py_version}t.lib',
+        f'/DEFAULTLIB:python{py_version}.lib'
+    ]
+else:
+    compile_args = ['-O3', '-fPIC']
 
+    pybind11_version = tuple(map(int, pybind11.__version__.split('.')[:2]))
+    if pybind11_version >= (2, 13):
+        compile_args.append('-std=c++17')
+    else:
+        compile_args.append('-std=c++11')
 
 cpp_module = Pybind11Extension(
     'kernel_experience._solvers_cpp',
@@ -64,4 +72,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
