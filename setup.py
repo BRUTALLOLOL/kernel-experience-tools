@@ -3,7 +3,6 @@ import pybind11
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 import numpy as np
 import sys
-import platform
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -37,18 +36,19 @@ cpp_module = Pybind11Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.0.1",
+    version="1.0.2",  
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/BRUTALLOLOL/kernel-experience-tools",
+    license="MIT", 
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     python_requires=">=3.7",
     install_requires=[
-        "numpy",
+        "numpy>=1.19.0", 
         "scipy>=1.6.0",
         "matplotlib>=3.3.0",
     ],
@@ -72,4 +72,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
