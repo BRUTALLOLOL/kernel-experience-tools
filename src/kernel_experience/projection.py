@@ -1,11 +1,19 @@
 """
 Projection algorithms: K(t) → n(t).
+With automatic C++ acceleration for heavy parts.
 """
 
 import numpy as np
 from typing import Tuple, Union
 from .kernel import Kernel
-from .solvers import solve_volterra
+from .solver import solve_volterra  # обрати внимание: solver (без s)
+
+# Try to import C++ acceleration module
+try:
+    from . import _projection_cpp
+    HAS_CPP_PROJECTION = True
+except ImportError:
+    HAS_CPP_PROJECTION = False
 
 
 def project_kernel_to_n(kernel: Kernel,
@@ -41,10 +49,15 @@ def project_kernel_to_n(kernel: Kernel,
     n : np.ndarray
         Experience function n(t) (real or complex).
     """
-    # 1. Solve Volterra equation
+    # 1. Solve Volterra equation (uses C++ if available via solver)
     t, x = solve_volterra(kernel, t_max, n_points, x0)
 
-    # 2. Compute n(t) = log_λ(x(t)/x0)
+    # 2. Compute n(t) = log_λ(x(t)/x0) (use C++ if available)
+    if HAS_CPP_PROJECTION:
+        n = _projection_cpp.fast_n(x, x0, lambda_param, return_complex)
+        return t, x, n
+
+    # Pure Python fallback
     ratio = x / x0
 
     if return_complex:
@@ -76,17 +89,24 @@ def project_to_envelope_n(kernel: Kernel,
         kernel, lambda_param, t_max, n_points, x0, return_complex=True
     )
 
-    # Extract envelope via Hilbert transform
-    analytic_signal = hilbert(x.real)
-    envelope = np.abs(analytic_signal)
+    # Extract envelope (use C++ if available)
+    if HAS_CPP_PROJECTION:
+        envelope = _projection_cpp.fast_envelope(x)
+    else:
+        # Pure Python fallback
+        analytic_signal = hilbert(x.real)
+        envelope = np.abs(analytic_signal)
 
     # Compute envelope n(t)
     ratio_env = envelope / x0
     ratio_env = np.maximum(ratio_env, 1e-12)
     n_env = np.log(ratio_env) / np.log(lambda_param)
 
-    # Ensure monotonic decrease (accumulated minimum)
-    n_env_mono = np.minimum.accumulate(n_env)
+    # Ensure monotonic decrease (use C++ if available)
+    if HAS_CPP_PROJECTION:
+        n_env_mono = _projection_cpp.fast_monotonic_min(n_env)
+    else:
+        n_env_mono = np.minimum.accumulate(n_env)
 
     return t, envelope, n_env_mono
 
