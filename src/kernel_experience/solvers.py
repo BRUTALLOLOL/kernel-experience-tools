@@ -47,7 +47,7 @@ def solve_volterra(kernel: Union[Kernel, Callable],
         Solution x(t).
     """
     # Extract the callable function from Kernel object if needed
-    if hasattr(kernel, 'func'):
+    if isinstance(kernel, Kernel):
         kernel_func = kernel.func
     else:
         kernel_func = kernel
