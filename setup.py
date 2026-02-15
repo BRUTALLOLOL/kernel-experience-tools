@@ -1,31 +1,27 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 import pybind11
+from pybind11.setup_helpers import Pybind11Extension, build_ext
 import numpy as np
 import sys
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-# Fix for Windows debug/release library conflict
-compile_args = ['-O3', '-std=c++11', '-DPy_LIMITED_API=0x030d0000']
+
+compile_args = ['-O3', '-std=c++11']
 link_args = []
 
 if sys.platform == 'win32':
-    # Force release mode on Windows
     compile_args.append('/MD')
-    
-    # Get Python version as string (e.g., "313" for 3.13)
     py_version = f"{sys.version_info.major}{sys.version_info.minor}"
-    
-    # Explicitly ignore debug library and force release
     link_args.append(f'/NODEFAULTLIB:python{py_version}t.lib')
     link_args.append(f'/DEFAULTLIB:python{py_version}.lib')
 
-# C++ module for fast Volterra solver
-cpp_module = Extension(
+
+cpp_module = Pybind11Extension(
     'kernel_experience._solvers_cpp',
     sources=['src/kernel_experience/solvers.cpp'],
-    include_dirs=[pybind11.get_include(), np.get_include()],
+    include_dirs=[np.get_include()],
     language='c++',
     extra_compile_args=compile_args,
     extra_link_args=link_args,
@@ -49,6 +45,7 @@ setup(
         "matplotlib>=3.3.0",
     ],
     ext_modules=[cpp_module],
+    cmdclass={"build_ext": build_ext},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
@@ -67,5 +64,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
-
