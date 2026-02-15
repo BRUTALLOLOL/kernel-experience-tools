@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
-compile_args = ['-O3', '-std=c++11']
+compile_args = ['-O3', '-std=c++11', '-DPy_LIMITED_API=0x030d0000']
 link_args = []
 
 if sys.platform == 'win32':
@@ -64,3 +64,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
