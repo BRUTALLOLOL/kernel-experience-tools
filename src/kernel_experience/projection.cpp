@@ -3,20 +3,19 @@
  * Fast C++ implementations for heavy numerical parts of projection.py
  */
 
+// ABSOLUTELY FIRST - before any includes
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
+
+#include <cmath>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include <cmath>
 #include <vector>
 #include <complex>
 #include <algorithm>
 
-// Fix for Windows M_PI issue
-#ifdef _WIN32
-#define _USE_MATH_DEFINES
-#endif
-#include <cmath>
-
-// Fallback if M_PI still not defined
+// Fallback if M_PI still not defined (shouldn't happen with _USE_MATH_DEFINES, but just in case)
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
