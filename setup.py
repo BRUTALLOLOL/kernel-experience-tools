@@ -3,6 +3,7 @@ import pybind11
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 import numpy as np
 import sys
+import os
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -11,21 +12,53 @@ compile_args = []
 link_args = []
 
 if sys.platform == 'win32':
-    compile_args = ['/O2', '/MD']
+    # Base Windows compile flags
+    compile_args = ['/MD', '/EHsc']  # EHsc enables C++ exception handling
+    
+    # Check if running in CI environment (GitHub Actions)
+    if os.getenv('GITHUB_ACTIONS') == 'true':
+        # Conservative flags for CI to prevent timeouts and crashes
+        compile_args.insert(0, '/O1')  # Minimal optimizations for stability
+        print("Windows CI detected: using conservative compile flags (/O1)")
+    else:
+        # Full optimizations for local builds
+        compile_args.insert(0, '/O2')  # Maximum optimizations
+        print("Local Windows build: using aggressive optimizations (/O2)")
+    
+    # Python version for linking
     py_version = f"{sys.version_info.major}{sys.version_info.minor}"
     link_args = [
         f'/NODEFAULTLIB:python{py_version}t.lib',
         f'/DEFAULTLIB:python{py_version}.lib'
     ]
+    
+    # Add debug info in CI for better error reporting
+    if os.getenv('GITHUB_ACTIONS') == 'true':
+        compile_args.append('/Zi')  # Debug symbols
+        link_args.append('/DEBUG')  # Debug information in executable
+        
 else:
+    # Unix-like systems (Linux, macOS)
     compile_args = ['-O3', '-fPIC']
+    
+    # Detect pybind11 version for C++ standard
     pybind11_version = tuple(map(int, pybind11.__version__.split('.')[:2]))
     if pybind11_version >= (2, 13):
         compile_args.append('-std=c++17')
+        print(f"Using C++17 (pybind11 {pybind11.__version__})")
     else:
         compile_args.append('-std=c++11')
+        print(f"Using C++11 (pybind11 {pybind11.__version__})")
+    
+    # Add debugging symbols in CI for Unix as well
+    if os.getenv('GITHUB_ACTIONS') == 'true':
+        compile_args.append('-g')  # Debug symbols
+        print("CI detected: adding debug symbols")
 
-# C++ module for Volterra solver (stay with _solvers_cpp)
+print(f"Compile flags: {compile_args}")
+print(f"Link flags: {link_args}")
+
+# C++ module for Volterra solver (original)
 solver_module = Pybind11Extension(
     'kernel_experience._solvers_cpp', 
     sources=['src/kernel_experience/solvers.cpp'],
