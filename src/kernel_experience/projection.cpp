@@ -8,6 +8,18 @@
 #include <cmath>
 #include <vector>
 #include <complex>
+#include <algorithm>
+
+// Fix for Windows M_PI issue
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
+#include <cmath>
+
+// Fallback if M_PI still not defined
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace py = pybind11;
 
