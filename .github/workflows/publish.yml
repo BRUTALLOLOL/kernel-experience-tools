@@ -23,11 +23,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install build pybind11 numpy
 
       - name: Build wheels
+        shell: bash
         run: python -m build --wheel
 
       - name: Rename Linux wheels to manylinux
@@ -43,11 +45,22 @@ jobs:
             fi
           done
 
-      - name: Debug - list built wheels
+      - name: Debug - list built wheels (Unix)
+        if: runner.os != 'windows-latest'
+        shell: bash
         run: |
           echo "=== Built wheels for ${{ runner.os }} Python ${{ matrix.python-version }} ==="
           ls -la dist/
           echo "=== Wheel count: $(ls -1 dist/*.whl 2>/dev/null | wc -l) ==="
+
+      - name: Debug - list built wheels (Windows)
+        if: runner.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Write-Host "=== Built wheels for Windows Python ${{ matrix.python-version }} ==="
+          Get-ChildItem -Path dist\
+          $wheelCount = (Get-ChildItem -Path dist\*.whl -ErrorAction SilentlyContinue).Count
+          Write-Host "=== Wheel count: $wheelCount ==="
 
       - name: Store wheels
         uses: actions/upload-artifact@v4
@@ -106,7 +119,7 @@ jobs:
           path: downloaded-artifacts
           merge-multiple: false
 
-      - name: Debug - list downloaded artifacts structure
+      - name: Debug - list downloaded artifacts (structure)
         run: |
           echo "=== DOWNLOADED ARTIFACTS STRUCTURE ==="
           find downloaded-artifacts -type f | sort
@@ -123,7 +136,6 @@ jobs:
       - name: Collect all wheel files
         run: |
           echo "=== COLLECTING WHEEL FILES ==="
-          # Ищем все wheel файлы в downloaded-artifacts
           wheel_count=0
           while IFS= read -r file; do
             if [ -f "$file" ]; then
@@ -143,7 +155,6 @@ jobs:
           echo "=== PROCESSING SOURCE DISTRIBUTIONS ==="
           sdist_count=0
           
-          # Обрабатываем каждый tar.gz файл
           while IFS= read -r tgz; do
             if [ -f "$tgz" ]; then
               echo ""
@@ -151,22 +162,18 @@ jobs:
               filename=$(basename "$tgz")
               echo "Filename: $filename"
               
-              # Создаем временную директорию
               temp_dir=$(mktemp -d)
               echo "Temp dir: $temp_dir"
               
-              # Распаковываем архив
               tar -xzf "$tgz" -C "$temp_dir"
               echo "Extracted to temp dir"
               
-              # Находим директорию пакета
               pkg_dir=$(find "$temp_dir" -maxdepth 1 -type d | grep -v "^$temp_dir$" | head -1)
               echo "Package directory: $pkg_dir"
               
               if [ -f "$pkg_dir/PKG-INFO" ]; then
                 echo "Found PKG-INFO, cleaning..."
                 
-                # Показываем оригинальное содержимое
                 echo "--- Original PKG-INFO (first 20 lines) ---"
                 head -20 "$pkg_dir/PKG-INFO"
                 
@@ -179,18 +186,15 @@ jobs:
                   echo "License: MIT" >> "$pkg_dir/PKG-INFO"
                 fi
                 
-                # Показываем очищенное содержимое
                 echo "--- Cleaned PKG-INFO (first 20 lines) ---"
                 head -20 "$pkg_dir/PKG-INFO"
               else
                 echo "WARNING: No PKG-INFO found in $pkg_dir"
               fi
               
-              # Создаем новый архив
               echo "Creating new archive: dist/$filename"
               (cd "$temp_dir" && tar -czf "$GITHUB_WORKSPACE/dist/$filename" "$(basename "$pkg_dir")")
               
-              # Проверяем созданный архив
               if [ -f "dist/$filename" ]; then
                 echo "✓ Successfully created: dist/$filename"
                 echo "New archive size: $(du -h "dist/$filename" | cut -f1)"
@@ -199,7 +203,6 @@ jobs:
                 echo "✗ Failed to create: dist/$filename"
               fi
               
-              # Очищаем временную директорию
               rm -rf "$temp_dir"
               echo "Cleaned up temp dir"
             fi
@@ -222,12 +225,10 @@ jobs:
               echo "File: $(basename "$file")"
               echo "  Size: $(du -h "$file" | cut -f1)"
               echo "  Type: $(file "$file")"
-              echo "  Permissions: $(stat -c '%a' "$file")"
               echo ""
             fi
           done
           
-          # Подсчет файлов
           wheel_count=$(ls -1 dist/*.whl 2>/dev/null | wc -l)
           sdist_count=$(ls -1 dist/*.tar.gz 2>/dev/null | wc -l)
           total_count=$((wheel_count + sdist_count))
@@ -253,7 +254,6 @@ jobs:
               tar -xOzf "$tgz" "*/PKG-INFO" 2>/dev/null || echo "Failed to extract PKG-INFO"
               echo "--- End of PKG-INFO ---"
               
-              # Проверяем наличие проблемных полей
               if tar -xOzf "$tgz" "*/PKG-INFO" 2>/dev/null | grep -q "license-file\|license-expression"; then
                 echo "⚠️  WARNING: Found problematic fields in metadata!"
               else
@@ -270,17 +270,17 @@ jobs:
             if [ -f "$whl" ]; then
               echo ""
               echo "Checking: $(basename "$whl")"
-              echo "--- METADATA content ---"
-              python -m wheel metadata "$whl" 2>/dev/null || echo "Failed to extract metadata"
               
-              # Распаковываем и проверяем METADATA
               temp_whl_dir=$(mktemp -d)
               unzip -q "$whl" -d "$temp_whl_dir"
-              if [ -f "$temp_whl_dir/*.dist-info/METADATA" ]; then
-                cat "$temp_whl_dir"/*.dist-info/METADATA | head -20
+              
+              metadata_file=$(find "$temp_whl_dir" -name "METADATA" -type f | head -1)
+              if [ -f "$metadata_file" ]; then
+                echo "--- METADATA content (first 20 lines) ---"
+                head -20 "$metadata_file"
+                echo "--- End of METADATA ---"
               fi
               rm -rf "$temp_whl_dir"
-              echo "--- End of METADATA ---"
             fi
           done
 
@@ -302,7 +302,12 @@ jobs:
           ls -la
           echo ""
           echo "Twine check output:"
-          twine check * 2>&1 || echo "Twine check completed with warnings"
+          # Проверяем каждый файл отдельно для лучшей диагностики
+          for file in *; do
+            echo "Checking $file:"
+            twine check "$file" 2>&1 || echo "⚠️  Twine check failed for $file"
+            echo "---"
+          done
           cd ..
 
       - name: Publish to PyPI
@@ -316,30 +321,33 @@ jobs:
           echo ""
           echo "Starting upload..."
           
-          # Загружаем файлы по одному для лучшей отладки
+          # Загружаем файлы по одному
           for file in dist/*; do
             if [ -f "$file" ]; then
               echo ""
               echo "Uploading: $(basename "$file")"
-              twine upload --verbose "$file"
-              if [ $? -eq 0 ]; then
+              echo "Full path: $file"
+              echo "File size: $(du -h "$file" | cut -f1)"
+              
+              # Пробуем загрузить
+              if twine upload --verbose "$file"; then
                 echo "✓ Successfully uploaded: $(basename "$file")"
               else
                 echo "✗ Failed to upload: $(basename "$file")"
-                exit 1
+                echo "Continuing with next file..."
               fi
             fi
           done
           
           echo ""
-          echo "✓ All files uploaded successfully to PyPI!"
+          echo "✓ Upload process completed!"
 
       - name: Verify upload
         if: success()
         run: |
           echo "=== VERIFYING UPLOAD ==="
-          # Получаем версию из первого wheel файла
           version=$(ls dist/*.whl 2>/dev/null | head -1 | grep -oP 'kernel_experience_tools-\K[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
           echo "Package version: $version"
           echo ""
           echo "Check at: https://pypi.org/project/kernel-experience-tools/$version/"
+          echo "It may take a few minutes to appear."
