@@ -1,12 +1,13 @@
 /**
- * projections.cpp
- * Fast C++ implementations for heavy numerical parts of projections.py
+ * projection.cpp
+ * Fast C++ implementations for heavy numerical parts of projection.py
  */
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <cmath>
 #include <vector>
+#include <complex>
 
 namespace py = pybind11;
 
@@ -99,7 +100,7 @@ py::array_t<double> fast_monotonic_min(
 // ----------------------------------------------------------------------------
 // Module definition
 // ----------------------------------------------------------------------------
-PYBIND11_MODULE(_projections_cpp, m) {
+PYBIND11_MODULE(_projection_cpp, m) {
     m.doc() = "C++ acceleration for projection algorithms";
     
     m.def("fast_n", &fast_n_computation,
@@ -110,7 +111,7 @@ PYBIND11_MODULE(_projections_cpp, m) {
           py::arg("return_complex") = false);
     
     m.def("fast_envelope", &fast_envelope,
-          "Fast envelope extraction via Hilbert transform",
+          "Fast envelope extraction",
           py::arg("x"));
     
     m.def("fast_monotonic_min", &fast_monotonic_min,
