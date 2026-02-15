@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -30,7 +30,7 @@ jobs:
       - name: Build wheels with cibuildwheel
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BUILD: cp${{ matrix.python-version | replace('.', '') }}-*
+          CIBW_BUILD: cp${{ matrix.python-version }}-*
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_ARCHS: auto
 
