@@ -12,53 +12,45 @@ compile_args = []
 link_args = []
 
 if sys.platform == 'win32':
-    # Base Windows compile flags
-    compile_args = ['/MD', '/EHsc']  # EHsc enables C++ exception handling
+    # Базовые флаги
+    compile_args = ['/MD', '/EHsc']
+    link_args = []
     
-    # Check if running in CI environment (GitHub Actions)
+    # Оптимизации
     if os.getenv('GITHUB_ACTIONS') == 'true':
-        # Conservative flags for CI to prevent timeouts and crashes
-        compile_args.insert(0, '/O2')  # Best optimizations
-        print("Windows CI detected: using conservative compile flags (/O2)")
+        compile_args.insert(0, '/O2')
+        compile_args.append('/GL')  # Whole Program Optimization для CI
+        link_args.append('/LTCG')   # Link Time Code Generation
+        print("Windows CI: /O2 + /GL + /LTCG for maximum optimization")
     else:
-        # Full optimizations for local builds
-        compile_args.insert(0, '/O2')  # Maximum optimizations
-        print("Local Windows build: using aggressive optimizations (/O2)")
+        compile_args.insert(0, '/O2')
+        compile_args.append('/GL')
+        link_args.append('/LTCG')
+        print("Local Windows: full optimization with LTO")
     
     # Python version for linking
     py_version = f"{sys.version_info.major}{sys.version_info.minor}"
-    link_args = [
+    link_args.extend([
         f'/NODEFAULTLIB:python{py_version}t.lib',
         f'/DEFAULTLIB:python{py_version}.lib'
-    ]
+    ])
     
-    # Add debug info in CI for better error reporting
-    if os.getenv('GITHUB_ACTIONS') == 'true':
-        compile_args.append('/Zi')  # Debug symbols
-        link_args.append('/DEBUG')  # Debug information in executable
-        
 else:
     # Unix-like systems (Linux, macOS)
-    compile_args = ['-O3', '-fPIC']
+    compile_args = ['-O3', '-fPIC', '-flto']  # LTO for gcc/clang
+    link_args = ['-flto']
     
     # Detect pybind11 version for C++ standard
     pybind11_version = tuple(map(int, pybind11.__version__.split('.')[:2]))
     if pybind11_version >= (2, 13):
         compile_args.append('-std=c++17')
-        print(f"Using C++17 (pybind11 {pybind11.__version__})")
     else:
         compile_args.append('-std=c++11')
-        print(f"Using C++11 (pybind11 {pybind11.__version__})")
-    
-    # Add debugging symbols in CI for Unix as well
-    if os.getenv('GITHUB_ACTIONS') == 'true':
-        compile_args.append('-g')  # Debug symbols
-        print("CI detected: adding debug symbols")
 
 print(f"Compile flags: {compile_args}")
 print(f"Link flags: {link_args}")
 
-# C++ module for Volterra solver (original)
+# C++ module for Volterra solver
 solver_module = Pybind11Extension(
     'kernel_experience._solvers_cpp', 
     sources=['src/kernel_experience/solvers.cpp'],
@@ -68,7 +60,7 @@ solver_module = Pybind11Extension(
     extra_link_args=link_args,
 )
 
-# NEW: C++ module for projection acceleration
+# C++ module for projection acceleration
 projection_module = Pybind11Extension(
     'kernel_experience._projection_cpp',
     sources=['src/kernel_experience/projection.cpp'],
@@ -80,7 +72,7 @@ projection_module = Pybind11Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.1.2",  
+    version="1.1.3",  
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
@@ -96,7 +88,7 @@ setup(
         "scipy>=1.6.0",
         "matplotlib>=3.3.0",
     ],
-    ext_modules=[solver_module, projection_module], 
+    ext_modules=[solver_module, projection_module],  # Оба модуля!
     cmdclass={"build_ext": build_ext},
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -116,6 +108,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
-
-
