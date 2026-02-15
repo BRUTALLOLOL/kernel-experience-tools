@@ -12,11 +12,11 @@ compile_args = []
 link_args = []
 
 if sys.platform == 'win32':
-    # Базовые флаги
+
     compile_args = ['/MD', '/EHsc']
     link_args = []
     
-    # Оптимизации
+    
     if os.getenv('GITHUB_ACTIONS') == 'true':
         compile_args.insert(0, '/O2')
         compile_args.append('/GL')  # Whole Program Optimization для CI
@@ -50,20 +50,21 @@ else:
 print(f"Compile flags: {compile_args}")
 print(f"Link flags: {link_args}")
 
-# C++ module for Volterra solver
+# core.cpp
 solver_module = Pybind11Extension(
     'kernel_experience._solvers_cpp', 
-    sources=['src/kernel_experience/solvers.cpp'],
+    sources=['src/kernel_experience/core.cpp'],
+    define_macros=[('BUILD_SOLVERS_MODULE', '1')],
     include_dirs=[np.get_include()],
     language='c++',
     extra_compile_args=compile_args,
     extra_link_args=link_args,
 )
 
-# C++ module for projection acceleration
 projection_module = Pybind11Extension(
     'kernel_experience._projection_cpp',
-    sources=['src/kernel_experience/projection.cpp'],
+    sources=['src/kernel_experience/core.cpp'],
+    define_macros=[('BUILD_PROJECTION_MODULE', '1')],
     include_dirs=[np.get_include()],
     language='c++',
     extra_compile_args=compile_args,
@@ -72,7 +73,7 @@ projection_module = Pybind11Extension(
 
 setup(
     name="kernel-experience-tools",
-    version="1.1.3",  
+    version="1.1.4",  
     author="Artem Vozmishchev",
     author_email="xbrutallololx@gmail.com",
     description="Library for projecting memory kernels to experience functions",
@@ -88,7 +89,7 @@ setup(
         "scipy>=1.6.0",
         "matplotlib>=3.3.0",
     ],
-    ext_modules=[solver_module, projection_module],  # Оба модуля!
+    ext_modules=[solver_module, projection_module],
     cmdclass={"build_ext": build_ext},
     classifiers=[
         "Programming Language :: Python :: 3",
