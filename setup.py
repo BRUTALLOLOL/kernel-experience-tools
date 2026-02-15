@@ -25,9 +25,20 @@ else:
     else:
         compile_args.append('-std=c++11')
 
-cpp_module = Pybind11Extension(
-    'kernel_experience._solvers_cpp',
-    sources=['src/kernel_experience/solvers.cpp'],
+# C++ module for Volterra solver
+solver_module = Pybind11Extension(
+    'kernel_experience._solver_cpp',  # обрати внимание: solver, не solvers
+    sources=['src/kernel_experience/solver.cpp'],
+    include_dirs=[np.get_include()],
+    language='c++',
+    extra_compile_args=compile_args,
+    extra_link_args=link_args,
+)
+
+# NEW: C++ module for projection acceleration
+projection_module = Pybind11Extension(
+    'kernel_experience._projection_cpp',
+    sources=['src/kernel_experience/projection.cpp'],
     include_dirs=[np.get_include()],
     language='c++',
     extra_compile_args=compile_args,
@@ -52,7 +63,7 @@ setup(
         "scipy>=1.6.0",
         "matplotlib>=3.3.0",
     ],
-    ext_modules=[cpp_module],
+    ext_modules=[solver_module, projection_module],  # два модуля!
     cmdclass={"build_ext": build_ext},
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -72,6 +83,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
-
-
