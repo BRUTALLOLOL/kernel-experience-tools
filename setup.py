@@ -7,6 +7,7 @@ import platform
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+
 compile_args = []
 link_args = []
 
@@ -19,7 +20,6 @@ if sys.platform == 'win32':
     ]
 else:
     compile_args = ['-O3', '-fPIC']
-
     pybind11_version = tuple(map(int, pybind11.__version__.split('.')[:2]))
     if pybind11_version >= (2, 13):
         compile_args.append('-std=c++17')
@@ -72,3 +72,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
+
