@@ -183,24 +183,21 @@ py::object fast_n_vectorized(
     double log_lambda = std::log(lambda_param);
     double inv_log_lambda = 1.0 / log_lambda;  // Multiply is faster than divide
     
-    if (return_complex) {
-        std::vector<std::complex<double>> result(n);
-        
-        #ifdef __GNUC__
-        #pragma GCC ivdep
-        #endif
-        for (int64_t i = 0; i < n; ++i) {
-            double ratio = x[i] / x0;
-            double mag = std::abs(ratio);
-            double phase = (ratio >= 0) ? 0.0 : M_PI;
-            
-            result[i] = std::complex<double>(
-                std::log(mag) * inv_log_lambda,
-                phase * inv_log_lambda
-            );
-        }
-        return py::cast(result);
-    } else {
+   if (return_complex) {
+    std::vector<std::complex<double>> result(n);
+    
+    #ifdef __GNUC__
+    #pragma GCC ivdep
+    #endif
+    for (int64_t i = 0; i < n; ++i) {
+
+        std::complex<double> z(x[i] / x0, 0.0);
+
+        std::complex<double> log_z = std::log(z);
+        result[i] = log_z * inv_log_lambda;
+    }
+    return py::cast(result);
+} else {
         std::vector<double> result(n);
         const double min_ratio = 1e-12;
         
